@@ -1,0 +1,4 @@
+[submodule "3rdparty/nfde"]
+	path = 3rdparty/nfde
+	url = https://github.com/btzy/nativefiledialog-extended.git
+	branch = v1.2.1
