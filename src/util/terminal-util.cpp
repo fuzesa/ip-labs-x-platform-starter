@@ -8,3 +8,12 @@ void TerminalUtil::clearScreen() {
   std::system("clear");
 #endif
 }
+
+void TerminalUtil::waitForUserInput() {
+#ifdef WINDOWS
+  system("pause");
+#else
+  std::cin.get();
+  std::cin.get();
+#endif
+}

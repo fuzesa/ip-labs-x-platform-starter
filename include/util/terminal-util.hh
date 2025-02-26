@@ -2,6 +2,7 @@
 #define TERMINAL_UTIL_HH
 
 #include <cstdlib>
+#include <iostream>
 
 class TerminalUtil {
  private:
@@ -10,6 +11,7 @@ class TerminalUtil {
 
  public:
   static void clearScreen();
+  static void waitForUserInput();
 };
 
 #endif  // TERMINAL_UTIL_HH

@@ -1,8 +1,8 @@
 #include <chrono>
 #include <iostream>
-#include <opencv4/opencv2/core.hpp>
-#include <opencv4/opencv2/highgui.hpp>
-#include <opencv4/opencv2/imgproc.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 #include "file-util.hh"
 #include "image-util.hh"
@@ -41,7 +41,7 @@ void testOpenImage() {
   if (!abs_image_path.empty()) {
     const Mat src = imread(abs_image_path);
     imshow("image", src);
-    waitKey();
+    ImageUtil::waitKey();
   }
 }
 
@@ -53,7 +53,7 @@ void testOpenImagesFld() {
     const filesystem::path path = abs_file_path;
     imshow(path.filename().string(), src);
   }
-  waitKey();
+  ImageUtil::waitKey();
 }
 
 void testNegativeImage() {
@@ -86,7 +86,7 @@ void testNegativeImage() {
 
     imshow("input image", src);
     imshow("negative image", dst);
-    waitKey();
+    ImageUtil::waitKey();
   }
 }
 
@@ -122,7 +122,7 @@ void testNegativeImageFast() {
 
     imshow("input image", src);
     imshow("negative image", dst);
-    waitKey();
+    ImageUtil::waitKey();
   }
 }
 
@@ -145,7 +145,7 @@ void testNegativeImageParallel() {
          << endl;
 
     imshow("input image", src);
-    waitKey();
+    ImageUtil::waitKey();
   }
 }
 
@@ -173,7 +173,7 @@ void testColor2Gray() {
 
     imshow("input image", src);
     imshow("gray image", dst);
-    waitKey();
+    ImageUtil::waitKey();
   }
 }
 
@@ -209,7 +209,7 @@ void testImageOpenAndSave() {
   imshow(WIN_SRC, src);
   imshow(WIN_DST, dst);
 
-  waitKey(0);
+  ImageUtil::waitKey();
 }
 
 void testBGR2HSV() {
@@ -252,7 +252,7 @@ void testBGR2HSV() {
     imshow("S", S);
     imshow("V", V);
 
-    waitKey();
+    ImageUtil::waitKey();
   }
 }
 
@@ -268,7 +268,7 @@ void testResize() {
     imshow("input image", src);
     imshow("resized image (without interpolation)", dst1);
     imshow("resized image (with interpolation)", dst2);
-    waitKey();
+    ImageUtil::waitKey();
   }
 }
 
@@ -284,7 +284,7 @@ void testCanny() {
     Canny(gauss, dst, pL, pH, 3);
     imshow("input image", src);
     imshow("canny", dst);
-    waitKey();
+    ImageUtil::waitKey();
   }
 };
 
@@ -318,6 +318,10 @@ void testVideoSequence() {
       break;  // ESC pressed
     };
   }
+#ifdef __APPLE__
+  destroyAllWindows();
+  waitKey(1);
+#endif
 }
 
 void testSnap() {
@@ -383,6 +387,10 @@ void testSnap() {
         imshow(WIN_DST, frame);
     }
   }
+#ifdef __APPLE__
+  destroyAllWindows();
+  waitKey(1);
+#endif
 }
 
 void myCallBackFunc(int event, int x, int y, int flags, void *param) {
@@ -418,7 +426,7 @@ void testMouseClick() {
     imshow("My Window", src);
 
     // Wait until user press some key
-    waitKey(0);
+    ImageUtil::waitKey();
   }
 }
 
@@ -452,7 +460,7 @@ void testChangeGrayLevelsAdditive() {
     const Mat dst = changeByFactor(src, true, ADDITIVE_FACTOR);
     imshow("Original", src);
     imshow("Modified", dst);
-    waitKey();
+    ImageUtil::waitKey();
   }
 }
 
@@ -465,7 +473,7 @@ void testChangeGrayLevelsMultiplicative() {
     imshow("Modified", dst);
     const string path_to_dst = ASSETS_DIR "Images/grayscale_multi.bmp";
     imwrite(path_to_dst, dst);
-    waitKey();
+    ImageUtil::waitKey();
   }
 }
 
@@ -490,21 +498,23 @@ void testDrawFourSquare() {
       }
     }
   imshow("Multi-color Square", square);
-  waitKey();
+  ImageUtil::waitKey();
 }
 
 void testPrintInverseOfMatrix() {
   cout << "Original matrix: " << endl << MATRIX3X3 << endl << endl;
   const Mat inverted = MATRIX3X3.inv();
   cout << "Inverse: " << endl << inverted << endl;
-  cin.get();
-  cin.get();
+  TerminalUtil::waitForUserInput();
 }
 
 int main() {
   int op;
   do {
     destroyAllWindows();
+#ifdef __APPLE__
+    waitKey(1);
+#endif
     TerminalUtil::clearScreen();
     printf("Menu:\n");
     printf(" 1 - Open image\n");
@@ -519,7 +529,11 @@ int main() {
     printf(" 10 - Edges in a video sequence\n");
     printf(" 11 - Snap frame from live video\n");
     printf(" 12 - Mouse callback demo\n");
-    printf(" 0 - Exit\n\n");
+    printf(" 13 - Additive\n");
+    printf(" 14 - Multiplicative\n");
+    printf(" 15 - Four squares\n");
+    printf(" 16 - Inverse\n");
+    printf("  0 - Exit\n\n");
     printf("Option: ");
     cin >> op;
     switch (op) {
@@ -558,6 +572,18 @@ int main() {
         break;
       case 12:
         testMouseClick();
+        break;
+      case 13:
+        testChangeGrayLevelsAdditive();
+        break;
+      case 14:
+        testChangeGrayLevelsMultiplicative();
+        break;
+      case 15:
+        testDrawFourSquare();
+        break;
+      case 16:
+        testPrintInverseOfMatrix();
         break;
     }
   } while (op != 0);

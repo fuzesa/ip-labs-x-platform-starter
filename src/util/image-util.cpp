@@ -1,7 +1,5 @@
 #include "image-util.hh"
 
-#include <opencv2/imgproc.hpp>
-
 void ImageUtil::resizeImg(const cv::Mat& src, cv::Mat& dst, int max_size,
                           bool interpolate) {
   double ratio = 1;
@@ -18,4 +16,12 @@ void ImageUtil::resizeImg(const cv::Mat& src, cv::Mat& dst, int max_size,
     resize(src, dst, sz);
   else
     resize(src, dst, sz, 0, 0, cv::INTER_NEAREST);
+}
+
+void ImageUtil::waitKey(int delay) {
+  cv::waitKey(delay);
+#ifdef __APPLE__
+  cv::destroyAllWindows();
+  cv::waitKey(1);
+#endif
 }
