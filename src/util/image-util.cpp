@@ -2,8 +2,8 @@
 
 #include <opencv2/imgproc.hpp>
 
-void utcn::ip::ImageUtil::resizeImg(const cv::Mat& src, cv::Mat& dst,
-                                    int max_size, bool interpolate) {
+void ImageUtil::resizeImg(const cv::Mat& src, cv::Mat& dst, int max_size,
+                          bool interpolate) {
   double ratio = 1;
   const double w = src.cols;
   const double h = src.rows;
