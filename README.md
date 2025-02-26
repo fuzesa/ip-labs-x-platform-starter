@@ -8,4 +8,4 @@
 
 ## Win 🪟
 
-**IMPORTANT** VS Code Only **!!!NOT regular Visual Studio!!!**
+**IMPORTANT** VS Code Only **!!!NOT regular Visual Studio!!!** although it also works in CLion
