@@ -2,10 +2,10 @@
 
 **IMPORTANT** WITHOUT CUDA SUPPORT
 
-## Linux :apple:
+## Linux 🐧
 
-## MacOS :apple:
+## MacOS 🍎
 
-## Win :window:
+## Win 🪟
 
-**IMPORTANT** VS Code Only **!!!NOT!!! Visual Studio**
+**IMPORTANT** VS Code Only **!!!NOT regular Visual Studio!!!**
