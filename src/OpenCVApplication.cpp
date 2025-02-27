@@ -26,12 +26,13 @@ using namespace std;
 // Lab 1 Constants
 static inline uchar ADDITIVE_FACTOR = 54;
 static inline uchar MULTIPLICATIVE_FACTOR = 3;
-static inline cv::Vec3b WHITE{255, 255, 255};
-static inline cv::Vec3b RED{0, 0, 255};
-static inline cv::Vec3b GREEN{0, 255, 0};
-static inline cv::Vec3b YELLOW{0, 255, 255};
+static inline Vec3b WHITE{255, 255, 255};
+static inline Vec3b RED{0, 0, 255};
+static inline Vec3b GREEN{0, 255, 0};
+static inline Vec3b YELLOW{0, 255, 255};
 static inline float MATRIX_VALS[9] = {2, 3, 1, 3, 4, 1, 3, 7, 2};
-static inline cv::Mat MATRIX3X3{3, 3, CV_32FC1, MATRIX_VALS};
+static inline Mat MATRIX3X3{3, 3, CV_32FC1, MATRIX_VALS};
+// End of Lab 1 Constants
 
 /**
  * LAB 1
@@ -507,6 +508,240 @@ void testPrintInverseOfMatrix() {
   cout << "Inverse: " << endl << inverted << endl;
   TerminalUtil::waitForUserInput();
 }
+// End of Lab 1
+
+/**
+ * LAB 2
+ */
+void testDisplayRGBSeparately() {
+  const std::string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    const Mat_<Vec3b> src = imread(abs_image_path, IMREAD_COLOR);
+
+    const auto t1 = std::chrono::high_resolution_clock::now();
+
+    const int height = src.rows;
+    const int width = src.cols;
+
+    Mat_<uchar> red(height, width);
+    Mat_<uchar> green(height, width);
+    Mat_<uchar> blue(height, width);
+
+    for (int i = 0; i < src.rows; i++) {
+      for (int j = 0; j < src.cols; j++) {
+        red(i, j) = src(i, j)[2];
+        green(i, j) = src(i, j)[1];
+        blue(i, j) = src(i, j)[0];
+      }
+    }
+
+    const auto t2 = std::chrono::high_resolution_clock::now();
+
+    // Compute the time difference [ms]
+    std::cout << "It took "
+              << std::chrono::duration<double, std::milli>(t2 - t1)
+              << std::endl;
+
+    imshow("source", src);
+    imshow("red", red);
+    imshow("green", green);
+    imshow("blue", blue);
+    ImageUtil::waitKey();
+  }
+}
+
+void testDisplayRGBSeparatelyFast() {
+  const std::string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    const Mat_<Vec3b> src = imread(abs_image_path, IMREAD_COLOR);
+
+    const auto t1 = std::chrono::high_resolution_clock::now();
+
+    const int height = src.rows;
+    const int width = src.cols;
+
+    Mat_<uchar> red(height, width);
+    Mat_<uchar> green(height, width);
+    Mat_<uchar> blue(height, width);
+
+    for (int i = 0; i < height; i++) {
+      const uchar *col_ptr = src.ptr(i);
+      for (int j = 0; j < width; j++) {
+        const uchar *pixel = col_ptr;
+        red(i, j) = pixel[2];
+        green(i, j) = pixel[1];
+        blue(i, j) = pixel[0];
+        col_ptr += 3;
+      }
+    }
+
+    const auto t2 = std::chrono::high_resolution_clock::now();
+
+    // Compute the time difference [ms]
+    std::cout << "It took "
+              << std::chrono::duration<double, std::milli>(t2 - t1)
+              << std::endl;
+
+    imshow("source", src);
+    imshow("red", red);
+    imshow("green", green);
+    imshow("blue", blue);
+    ImageUtil::waitKey();
+  }
+}
+
+void testRGB2Gray() {
+  const std::string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    const Mat_<Vec3b> src = imread(abs_image_path, IMREAD_COLOR);
+
+    const auto t1 = std::chrono::high_resolution_clock::now();
+
+    const int height = src.rows;
+    const int width = src.cols;
+
+    Mat_<uchar> gray(height, width);
+
+    for (int i = 0; i < height; i++) {
+      const uchar *col_ptr = src.ptr(i);
+      for (int j = 0; j < width; j++) {
+        const uchar *pixel = col_ptr;
+        gray(i, j) = (pixel[0] + pixel[1] + pixel[2]) / 3;
+        col_ptr += 3;
+      }
+    }
+
+    const auto t2 = std::chrono::high_resolution_clock::now();
+
+    // Compute the time difference [ms]
+    std::cout << "It took "
+              << std::chrono::duration<double, std::milli>(t2 - t1)
+              << std::endl;
+
+    imshow("source", src);
+    imshow("gray", gray);
+    ImageUtil::waitKey();
+  }
+}
+
+void testGray2Binary() {
+  const std::string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    Mat_<uchar> src = imread(abs_image_path, IMREAD_GRAYSCALE);
+    int threshold;
+    std::cout << "Please enter the value for the threshold: ";
+    std::cin >> threshold;
+    Mat_<uchar> dst(src.rows, src.cols, CV_8UC1);
+    for (int i = 0; i < src.rows; i++) {
+      for (int j = 0; j < src.cols; j++) {
+        dst(i, j) = src(i, j) > threshold ? 255 : 0;
+      }
+    }
+    imshow("Source", src);
+    imshow("B & W", dst);
+    ImageUtil::waitKey();
+  }
+}
+
+std::vector<float> getNormalizedRGB(const uchar *pixel) {
+  std::vector<float> rgb(3);
+  rgb[0] = (float)pixel[0] / 255.0;
+  rgb[1] = (float)pixel[1] / 255.0;
+  rgb[2] = (float)pixel[2] / 255.0;
+  return rgb;
+}
+
+void testRGB2HSV() {
+  const std::string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    const Mat_<Vec3b> src = imread(abs_image_path, IMREAD_COLOR);
+
+    const auto t1 = std::chrono::high_resolution_clock::now();
+
+    const int height = src.rows;
+    const int width = src.cols;
+
+    Mat_<uchar> H_norm(height, width);
+    Mat_<uchar> S_norm(height, width);
+    Mat_<uchar> V_norm(height, width);
+
+    for (int i = 0; i < height; i++) {
+      const uchar *col_ptr = src.ptr(i);
+      for (int j = 0; j < width; j++) {
+        const uchar *pixel = col_ptr;
+
+        // r, g, b
+        const std::vector<float> rgb = getNormalizedRGB(pixel);
+
+        // M, m, C
+        const float M = *std::max_element(rgb.begin(), rgb.end());
+        const float m = *std::min_element(rgb.begin(), rgb.end());
+        const float C = M - m;
+
+        // H, S, V
+
+        const float V = M;
+
+        const float S = V == 0 ? 0 : C / V;
+
+        const float H = C == 0        ? 0
+                        : M == rgb[2] ? 60 * (rgb[1] - rgb[0]) / C
+                        : M == rgb[1] ? 120 + 60 * (rgb[0] - rgb[2]) / C
+                        : M == rgb[0] ? 240 + 60 * (rgb[2] - rgb[1]) / C
+                                      : 0;
+        H_norm(i, j) = (uchar)(H * 255 / 360);
+        S_norm(i, j) = (uchar)(S * 255);
+        V_norm(i, j) = (uchar)(V * 255);
+        col_ptr += 3;
+      }
+    }
+
+    const auto t2 = std::chrono::high_resolution_clock::now();
+
+    // Compute the time difference [ms]
+    std::cout << "It took "
+              << std::chrono::duration<double, std::milli>(t2 - t1)
+              << std::endl;
+
+    imshow("source", src);
+    imshow("H", H_norm);
+    imshow("S", S_norm);
+    imshow("V", V_norm);
+    ImageUtil::waitKey();
+  }
+}
+
+bool isInside(const Mat &img, int i, int j) {
+  /* Point p(i, j);
+  if (p.inside(Rect(0, 0, img.cols, img.rows))) {
+    std::cout << "Point is inside" << std::endl;
+  } else {
+    std::cout << "Point is outside" << std::endl;
+  } */
+  return i >= 0 && i < img.rows && j >= 0 && j < img.cols;
+}
+
+void testIsInside() {
+  const std::string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    const Mat_<Vec3b> src = imread(abs_image_path, IMREAD_COLOR);
+
+    int x, y;
+    std::cout << "Please enter the X coordinate of the point: ";
+    std::cin >> x;
+    std::cout << "Please enter the Y coordinate of the point: ";
+    std::cin >> y;
+
+    if (isInside(src, x, y)) {
+      std::cout << "Point is inside" << std::endl;
+    } else {
+      std::cout << "Point is NOT inside" << std::endl;
+    }
+
+    TerminalUtil::waitForUserInput();
+  }
+}
+// End of Lab 2
 
 int main() {
   int op;
@@ -517,15 +752,15 @@ int main() {
 #endif
     TerminalUtil::clearScreen();
     printf("Menu:\n");
-    printf(" 1 - Open image\n");
-    printf(" 2 - Open BMP images from folder\n");
-    printf(" 3 - Image negative\n");
-    printf(" 4 - Image negative (fast)\n");
-    printf(" 5 - BGR->Gray\n");
-    printf(" 6 - BGR->Gray (fast, save result to disk) \n");
-    printf(" 7 - BGR->HSV\n");
-    printf(" 8 - Resize image\n");
-    printf(" 9 - Canny edge detection\n");
+    printf("  1 - Open image\n");
+    printf("  2 - Open BMP images from folder\n");
+    printf("  3 - Image negative\n");
+    printf("  4 - Image negative (fast)\n");
+    printf("  5 - BGR->Gray\n");
+    printf("  6 - BGR->Gray (fast, save result to disk) \n");
+    printf("  7 - BGR->HSV\n");
+    printf("  8 - Resize image\n");
+    printf("  9 - Canny edge detection\n");
     printf(" 10 - Edges in a video sequence\n");
     printf(" 11 - Snap frame from live video\n");
     printf(" 12 - Mouse callback demo\n");
@@ -533,6 +768,12 @@ int main() {
     printf(" 14 - Multiplicative\n");
     printf(" 15 - Four squares\n");
     printf(" 16 - Inverse\n");
+    printf(" 21 - Display R, G, B separately\n");
+    printf(" 22 - Display R, G, B separately Fast\n");
+    printf(" 23 - RGB -> Grayscale\n");
+    printf(" 24 - Grayscale -> Binary with threshold from stdin\n");
+    printf(" 25 - RGB -> HSV\n");
+    printf(" 26 - isInside\n");
     printf("  0 - Exit\n\n");
     printf("Option: ");
     cin >> op;
@@ -584,6 +825,24 @@ int main() {
         break;
       case 16:
         testPrintInverseOfMatrix();
+        break;
+      case 21:
+        testDisplayRGBSeparately();
+        break;
+      case 22:
+        testDisplayRGBSeparatelyFast();
+        break;
+      case 23:
+        testRGB2Gray();
+        break;
+      case 24:
+        testGray2Binary();
+        break;
+      case 25:
+        testRGB2HSV();
+        break;
+      case 26:
+        testIsInside();
         break;
     }
   } while (op != 0);
