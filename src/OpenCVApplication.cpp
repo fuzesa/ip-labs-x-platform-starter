@@ -1,3 +1,5 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
 #include <chrono>
 #include <iostream>
 #include <opencv2/core.hpp>
@@ -131,13 +133,12 @@ void testNegativeImageParallel() {
   const string abs_image_path = FileUtil::getSingleFileAbsPath();
   if (!abs_image_path.empty()) {
     const Mat src = imread(abs_image_path, IMREAD_GRAYSCALE);
+    Mat dst = src.clone();
 
     const auto t1 = std::chrono::high_resolution_clock::now();
 
-    for (int num = 0; num < 20000; num++) {
-      src.forEach<uchar>(
-          [](uchar &curr, const int *position) -> void { curr = 255 - curr; });
-    }
+    // OpenCV forEach
+    src.forEach<uchar>([&dst](uchar &curr, const int *position) -> void { dst.at<uchar>(position) = 255 - curr; });
 
     const auto t2 = std::chrono::high_resolution_clock::now();
 
@@ -146,6 +147,31 @@ void testNegativeImageParallel() {
          << endl;
 
     imshow("input image", src);
+    imshow("negative image", dst);
+    ImageUtil::waitKey();
+  }
+}
+
+void testNegativeImageUnifiedMat() {
+  const string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    // UMat is a class to store data in GPU memory
+    // CANNOT BE const!!!
+    UMat src, dst;
+    imread(abs_image_path, IMREAD_GRAYSCALE).copyTo(src);
+
+    const auto t1 = std::chrono::high_resolution_clock::now();
+
+    bitwise_not(src, dst);
+
+    const auto t2 = std::chrono::high_resolution_clock::now();
+
+    // Compute the time difference [ms]
+    cout << "It took " << std::chrono::duration<double, std::milli>(t2 - t1)
+         << endl;
+
+    imshow("input image", src);
+    imshow("negative image", dst);
     ImageUtil::waitKey();
   }
 }
@@ -546,6 +572,7 @@ void testDisplayRGBSeparately() {
     imshow("red", red);
     imshow("green", green);
     imshow("blue", blue);
+
     ImageUtil::waitKey();
   }
 }
@@ -756,6 +783,8 @@ int main() {
     printf("  2 - Open BMP images from folder\n");
     printf("  3 - Image negative\n");
     printf("  4 - Image negative (fast)\n");
+    printf(" 17 - Image negative (parallel)\n");
+    printf(" 18 - Image negative (UMat)\n");
     printf("  5 - BGR->Gray\n");
     printf("  6 - BGR->Gray (fast, save result to disk) \n");
     printf("  7 - BGR->HSV\n");
@@ -789,6 +818,12 @@ int main() {
         break;
       case 4:
         testNegativeImageFast();
+        break;
+      case 17:
+        testNegativeImageParallel();
+        break;
+      case 18:
+        testNegativeImageUnifiedMat();
         break;
       case 5:
         testColor2Gray();

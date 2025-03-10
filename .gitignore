@@ -9,3 +9,14 @@ cmake-build-*/
 
 # DevContainer
 .devcontainer/
+
+# Static Code Analysis related files
+.PVS-Studio/
+cppcheck/
+cppcheck.xml
+cppcheck.txt
+cppcheck.html
+clang-tidy/
+clang-tidy.txt
+clang-tidy.html
+clang-tidy.xml
