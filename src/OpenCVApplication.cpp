@@ -1,10 +1,12 @@
 // This is a personal academic project. Dear PVS-Studio, please check it.
-// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: https://pvs-studio.com
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java:
+// https://pvs-studio.com
 #include <chrono>
 #include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <random>
 
 #include "file-util.hh"
 #include "image-util.hh"
@@ -138,7 +140,9 @@ void testNegativeImageParallel() {
     const auto t1 = std::chrono::high_resolution_clock::now();
 
     // OpenCV forEach
-    src.forEach<uchar>([&dst](uchar &curr, const int *position) -> void { dst.at<uchar>(position) = 255 - curr; });
+    src.forEach<uchar>([&dst](uchar &curr, const int *position) -> void {
+      dst.at<uchar>(position) = 255 - curr;
+    });
 
     const auto t2 = std::chrono::high_resolution_clock::now();
 
@@ -770,6 +774,41 @@ void testIsInside() {
 }
 // End of Lab 2
 
+// Lab 5
+
+// Returns a random integer within the range [min, max]
+// YOU MUST HAVE #include <random> at the top of your file
+int generateRandomInt(const int min, const int max) {
+  static bool is_seeded = false;
+  static std::mt19937 generator;
+
+  // Seed once
+  if (!is_seeded) {
+    std::random_device rd;
+    generator.seed(rd());
+    is_seeded = true;
+  }
+
+  // Use a Mersenne Twister engine to pick a random number
+  // within the given range
+  std::uniform_int_distribution<int> distribution(min, max);
+  return distribution(generator);
+}
+
+Vec3b getRandomColor() {
+  return Vec3b(generateRandomInt(0, 255), generateRandomInt(0, 255),
+               generateRandomInt(0, 255));
+}
+
+void testGetRandomColor() {
+  for (int i = 0; i < 10; i++) {
+    cout << getRandomColor() << endl;
+  }
+  TerminalUtil::waitForUserInput();
+}
+
+// End of Lab 5
+
 int main() {
   int op;
   do {
@@ -803,6 +842,7 @@ int main() {
     printf(" 24 - Grayscale -> Binary with threshold from stdin\n");
     printf(" 25 - RGB -> HSV\n");
     printf(" 26 - isInside\n");
+    printf(" 51 - Test random colors\n");
     printf("  0 - Exit\n\n");
     printf("Option: ");
     cin >> op;
@@ -878,6 +918,9 @@ int main() {
         break;
       case 26:
         testIsInside();
+        break;
+      case 51:
+        testGetRandomColor();
         break;
     }
   } while (op != 0);
