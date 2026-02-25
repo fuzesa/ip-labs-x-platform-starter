@@ -13,6 +13,13 @@ target_include_directories(${PROJECT_NAME}
         ${CMAKE_CURRENT_LIST_DIR}/include
 )
 
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME}
+        PRIVATE
+            ${CMAKE_CURRENT_LIST_DIR}/lib/windows/nfd.lib
+    )
+endif()
+
 # On macOS, link required frameworks
 if(APPLE)
     target_link_libraries(${PROJECT_NAME}
