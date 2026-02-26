@@ -26,7 +26,6 @@ if(APPLE)
         PRIVATE
             ${CMAKE_CURRENT_LIST_DIR}/lib/macos/libnfd.a
             "-framework AppKit"
-            "-framework Foundation"
             "-framework UniformTypeIdentifiers"
     )
 endif()
