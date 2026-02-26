@@ -1,5 +1,7 @@
+assets/
 build/
 .DS_Store
 
 .vs/
 out/
+lib/windows/opencv/
