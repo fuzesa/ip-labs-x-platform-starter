@@ -5,12 +5,20 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Find OpenCV
-# MacOS and Linux
 if(UNIX)
+    # MacOS and Linux should be installed via package manager
     find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui imgcodecs)
+else()
+    # Windows
+    find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui imgcodecs PATHS "${CMAKE_CURRENT_LIST_DIR}/lib/windows/opencv")
 endif()
 
+add_definitions(-DASSETS_DIR="${CMAKE_SOURCE_DIR}/assets/")
+
 add_executable(${PROJECT_NAME}
+  src/file-util.cc
+  src/image-util.cc
+  src/terminal-util.cc
   src/main.cc
 )
 
@@ -49,3 +57,11 @@ target_link_libraries(${PROJECT_NAME}
         opencv_highgui
         opencv_imgcodecs
 )
+
+if(WIN32)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:opencv_world>
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    )
+endif()

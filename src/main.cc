@@ -1,26 +1,24 @@
+#include <chrono>
 #include <iostream>
-#include "nfd.hpp"
 
-/* this test should compile on all supported platforms */
-/* this demonstrates the thin C++ wrapper */
+
+#include "file-util.hh"
+#include "image-util.hh"
+#include "terminal-util.hh"
+
+using namespace cv;
+using namespace std;
+
+void testOpenImage() {
+  const string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    const Mat src = imread(abs_image_path);
+    imshow("image", src);
+    ImageUtil::waitKey();
+  }
+}
 
 int main() {
-    // initialize NFD
-    NFD::Guard nfdGuard;
-
-    // auto-freeing memory
-    NFD::UniquePath outPath;
-
-    // show the dialog
-    nfdresult_t result = NFD::OpenDialog(outPath);
-    if (result == NFD_OKAY) {
-        std::cout << "Success!" << std::endl << outPath.get() << std::endl;
-    } else if (result == NFD_CANCEL) {
-        std::cout << "User pressed cancel." << std::endl;
-    } else {
-        std::cout << "Error: " << NFD::GetError() << std::endl;
-    }
-
-    // NFD::Guard will automatically quit NFD.
-    return 0;
+  testOpenImage();
+  return 0;
 }
