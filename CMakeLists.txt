@@ -8,6 +8,12 @@ if(APPLE)
   set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
 endif(APPLE)
 
+# Find GTK3 for Linux (required by NFD)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+endif()
+
 # Find OpenCV
 if(UNIX)
     # MacOS and Linux should be installed via package manager
@@ -49,6 +55,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set_target_properties(nfd::nfd PROPERTIES
     IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/lib/linux/libnfd.a"
   )
+    target_link_libraries(nfd::nfd INTERFACE ${GTK3_LIBRARIES})
+    target_include_directories(nfd::nfd INTERFACE ${GTK3_INCLUDE_DIRS})
 else()
     message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
 endif()
