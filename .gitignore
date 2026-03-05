@@ -3,5 +3,6 @@ build/
 .DS_Store
 
 .vs/
+.vscode/
 out/
 lib/windows/opencv/

@@ -49,7 +49,7 @@ void testOpenImage() {
 // Not recursive
 void testOpenImagesFld() {
   const auto abs_file_paths = FileUtil::getAllFilesInDirectory();
-  for (const auto &abs_file_path : abs_file_paths) {
+  for (const auto& abs_file_path : abs_file_paths) {
     const Mat src = imread(abs_file_path);
     const filesystem::path path = abs_file_path;
     imshow(path.filename().string(), src);
@@ -107,8 +107,8 @@ void testNegativeImageFast() {
     for (int num = 0; num < 1000; num++) {
       // The fastest approach of accessing the pixels -> using pointers
       cout << "num: " << num << endl;
-      const uchar *lpSrc = src.data;
-      uchar *lpDst = dst.data;
+      const uchar* lpSrc = src.data;
+      uchar* lpDst = dst.data;
       const int w = (int)src.step;  // no dword alignment is done !!!
       for (int i = 0; i < height; i++)
         for (int j = 0; j < width; j++) {
@@ -138,9 +138,11 @@ void testNegativeImageParallel() {
     const auto t1 = std::chrono::high_resolution_clock::now();
 
     for (int num = 0; num < 1000; num++) {
-        cout << "num: " << num << endl;
-        // OpenCV forEach
-        src.forEach<uchar>([&dst](uchar &curr, const int *position) -> void { dst.at<uchar>(position) = 255 - curr; });
+      cout << "num: " << num << endl;
+      // OpenCV forEach
+      src.forEach<uchar>([&dst](uchar& curr, const int* position) -> void {
+        dst.at<uchar>(position) = 255 - curr;
+      });
     }
 
     const auto t2 = std::chrono::high_resolution_clock::now();
@@ -165,7 +167,10 @@ void testNegativeImageUnifiedMat() {
 
     const auto t1 = std::chrono::high_resolution_clock::now();
 
-    bitwise_not(src, dst);
+    for (int num = 0; num < 1000; num++) {
+      cout << "num: " << num << endl;
+      bitwise_not(src, dst);
+    }
 
     const auto t2 = std::chrono::high_resolution_clock::now();
 
@@ -225,7 +230,7 @@ void testImageOpenAndSave() {
   namedWindow(WIN_SRC, WINDOW_AUTOSIZE);
   moveWindow(WIN_SRC, 0, 0);
 
-  const auto *WIN_DST = "Dst";  // window for the destination (processed) image
+  const auto* WIN_DST = "Dst";  // window for the destination (processed) image
   namedWindow(WIN_DST, WINDOW_AUTOSIZE);
   moveWindow(WIN_DST, src_size.width + 10, 0);
 
@@ -256,15 +261,15 @@ void testBGR2HSV() {
 
     // Defining pointers to each matrix (8 bits/pixels) of the individual
     // components H, S, V
-    uchar *lpH = H.data;
-    uchar *lpS = S.data;
-    uchar *lpV = V.data;
+    uchar* lpH = H.data;
+    uchar* lpS = S.data;
+    uchar* lpV = V.data;
 
     Mat hsvImg;
     cvtColor(src, hsvImg, COLOR_BGR2HSV);
 
     // Defining the pointer to the HSV image matrix (24 bits/pixel)
-    uchar *hsvDataPtr = hsvImg.data;
+    uchar* hsvDataPtr = hsvImg.data;
 
     for (int i = 0; i < height; i++) {
       for (int j = 0; j < width; j++) {
@@ -423,10 +428,10 @@ void testSnap() {
 #endif
 }
 
-void myCallBackFunc(int event, int x, int y, int flags, void *param) {
+void myCallBackFunc(int event, int x, int y, int flags, void* param) {
   // More examples:
   // http://opencvexamples.blogspot.com/2014/01/detect-mouse-clicks-and-moves-on-image.html
-  auto *src = static_cast<Mat *>(param);
+  auto* src = static_cast<Mat*>(param);
   if (event == EVENT_LBUTTONDOWN) {
     // C style casting
     // Doesn't check at compile time
@@ -460,14 +465,14 @@ void testMouseClick() {
   }
 }
 
-Mat changeByFactor(const Mat &orig_pic, const bool isAdditive,
+Mat changeByFactor(const Mat& orig_pic, const bool isAdditive,
                    const uchar factor) {
   const int height = orig_pic.rows;
   const int width = orig_pic.cols;
   Mat dst = Mat(height, width, CV_8UC1);
 
-  const uchar *lpSrc = orig_pic.data;
-  uchar *lpDst = dst.data;
+  const uchar* lpSrc = orig_pic.data;
+  uchar* lpDst = dst.data;
 
   const int w = (int)orig_pic.step;  // no dword alignment is done !!!
   for (int i = 0; i < height; i++)
@@ -595,9 +600,9 @@ void testDisplayRGBSeparatelyFast() {
     Mat_<uchar> blue(height, width);
 
     for (int i = 0; i < height; i++) {
-      const uchar *col_ptr = src.ptr(i);
+      const uchar* col_ptr = src.ptr(i);
       for (int j = 0; j < width; j++) {
-        const uchar *pixel = col_ptr;
+        const uchar* pixel = col_ptr;
         red(i, j) = pixel[2];
         green(i, j) = pixel[1];
         blue(i, j) = pixel[0];
@@ -620,15 +625,11 @@ void testDisplayRGBSeparatelyFast() {
   }
 }
 
-void testRGB2Gray() {
-  
-}
+void testRGB2Gray() {}
 
-void testGray2Binary() {
-  
-}
+void testGray2Binary() {}
 
-std::vector<float> getNormalizedRGB(const uchar *pixel) {
+std::vector<float> getNormalizedRGB(const uchar* pixel) {
   std::vector<float> rgb(3);
   rgb[0] = (float)pixel[0] / 255.0;
   rgb[1] = (float)pixel[1] / 255.0;
@@ -651,9 +652,9 @@ void testRGB2HSV() {
     Mat_<uchar> V_norm(height, width);
 
     for (int i = 0; i < height; i++) {
-      const uchar *col_ptr = src.ptr(i);
+      const uchar* col_ptr = src.ptr(i);
       for (int j = 0; j < width; j++) {
-        const uchar *pixel = col_ptr;
+        const uchar* pixel = col_ptr;
 
         // r, g, b
         const std::vector<float> rgb = getNormalizedRGB(pixel);
@@ -696,7 +697,7 @@ void testRGB2HSV() {
   }
 }
 
-bool isInside(const Mat &img, int i, int j) {
+bool isInside(const Mat& img, int i, int j) {
   /* Point p(i, j);
   if (p.inside(Rect(0, 0, img.cols, img.rows))) {
     std::cout << "Point is inside" << std::endl;

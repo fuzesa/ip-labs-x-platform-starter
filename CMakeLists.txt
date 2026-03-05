@@ -3,6 +3,10 @@ project(utcn_ip_starter LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(APPLE)
+  # CMAKE_OSX_SYSROOT=$(xcrun --show-sdk-path)
+  set(CMAKE_OSX_SYSROOT "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk")
+endif(APPLE)
 
 # Find OpenCV
 if(UNIX)
