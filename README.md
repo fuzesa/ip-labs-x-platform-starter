@@ -1,16 +1,33 @@
 # Labs 2026
 
+<details>
+<summary>Lab 1</summary>
+
 ## Lab 1
 
 Soon
+</details>
+
+<details>
+<summary>Lab 2</summary>
 
 ## Lab 2
 
 Soon
+</details>
+
+<details>
+<summary>Lab 3</summary>
 
 ## Lab 3
 
+<details>
+<summary>C++ quick reminder on pointers / arrays</summary>
+
 ### C++ quick reminder on pointers / arrays
+
+<details>
+<summary>I. Old way with pointers</summary>
 
 #### I. The *OLD* way of returning arrays with pointers
 
@@ -50,6 +67,11 @@ The issue with this is that:
 - array size is not included
 
 This is usually recommended in special cases where you need explicit control of memory, such as high-reliability systems
+
+</details>
+
+<details>
+<summary>II. DYNAMIC size arrays</summary>
 
 #### II. Using `std::vector<type>` for *DYNAMIC* size arrays
 
@@ -109,6 +131,11 @@ Result:
 0
 ```
 
+</details>
+
+<details>
+<summary>III. STATIC size arrays</summary>
+
 #### III. Using `std:array<type, size>` for *STATIC* size arrays
 
 In case I know the size of the array at compile time, then it's better to use `std::array<type, size>`
@@ -139,3 +166,9 @@ int main() {
   }  
 }
 ```
+
+</details>
+
+</details>
+
+</details>
