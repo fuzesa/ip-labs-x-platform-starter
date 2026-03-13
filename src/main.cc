@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <array>
 #include <chrono>
 #include <iostream>
 #include <opencv2/core.hpp>
@@ -411,7 +413,7 @@ void testSnap() {
       //'s' pressed - snap the image to a file
       frameCount++;
       fileName[0] = '\0';
-      sprintf(numberStr, "%d", frameCount);
+      snprintf(numberStr, sizeof(numberStr), "%d", frameCount);
       strcat(fileName, ASSETS_DIR "Images/A");
       strcat(fileName, numberStr);
       strcat(fileName, ".bmp");
@@ -625,9 +627,98 @@ void testDisplayRGBSeparatelyFast() {
   }
 }
 
-void testRGB2Gray() {}
+void testRGB2Gray() {
+  const string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    Mat src = imread(abs_image_path);
 
-void testGray2Binary() {}
+    Mat dst(src.rows, src.cols, CV_8UC1);
+
+    for (int i = 0; i < src.rows; i++) {
+      for (int j = 0; j < src.cols; j++) {
+        Vec3b pixel = src.at<Vec3b>(i, j);
+        unsigned char B = pixel[0];
+        unsigned char G = pixel[1];
+        unsigned char R = pixel[2];
+
+        dst.at<uchar>(i, j) = (B + G + R) / 3;
+      }
+    }
+
+    imshow("Color", src);
+    imshow("Grayscale", dst);
+
+    ImageUtil::waitKey();
+  }
+}
+
+Mat getGrayFromRGB(const Mat& src) {
+  Mat dst = Mat(src.rows, src.cols, CV_8UC1);
+  for (int i = 0; i < src.rows; i++) {
+    const uchar* col_ptr = src.ptr(i);
+    for (int j = 0; j < src.cols; j++) {
+      const uchar* pixel = col_ptr;
+      unsigned char B = pixel[0];
+      unsigned char G = pixel[1];
+      unsigned char R = pixel[2];
+
+      // dst.at<uchar>(i, j) = (B + G + R) / 3;
+      // Using the luminosity method for better results
+      dst.at<uchar>(i, j) = 0.299 * R + 0.587 * G + 0.114 * B;
+      col_ptr += 3;
+    }
+  }
+  return dst;
+}
+
+void testRGB2GrayFast() {
+  const string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    Mat src = imread(abs_image_path);
+
+    Mat dst = getGrayFromRGB(src);
+
+    imshow("Color", src);
+    imshow("Grayscale", dst);
+
+    ImageUtil::waitKey();
+  }
+}
+
+Mat getBinaryFromGray(const Mat& src, const uchar threshold) {
+  Mat dst = Mat(src.rows, src.cols, CV_8UC1);
+  for (int i = 0; i < src.rows; i++) {
+    const uchar* col_ptr = src.ptr(i);
+    for (int j = 0; j < src.cols; j++) {
+      const uchar val = col_ptr[j];
+      dst.at<uchar>(i, j) = val > threshold ? 255 : 0;
+    }
+  }
+  return dst;
+}
+
+void testGray2Binary() {
+  const string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    Mat src = imread(abs_image_path, IMREAD_GRAYSCALE);
+
+    uchar threshold;
+    cout << "Please enter the threshold value (0-255): ";
+    cin >> threshold;
+    while (threshold <= 0 || threshold > 255) {
+      cout << "Invalid threshold value. Please enter a value between 0 and "
+              "255: ";
+      cin >> threshold;
+    }
+
+    Mat dst = getBinaryFromGray(src, threshold);
+
+    imshow("Grayscale", src);
+    imshow("Binary", dst);
+
+    ImageUtil::waitKey();
+  }
+}
 
 std::vector<float> getNormalizedRGB(const uchar* pixel) {
   std::vector<float> rgb(3);
@@ -729,6 +820,353 @@ void testIsInside() {
 }
 // End of Lab 2
 
+/**
+ * LAB 3
+ */
+
+// Return the histogram of the image as an array of 256 elements
+int* getHistogramOld(const Mat& img) {
+  const int height = img.rows;
+  const int width = img.cols;
+
+  int* histogram = new int[256]();
+
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      const uchar val = img.at<uchar>(i, j);
+      histogram[val]++;
+    }
+  }
+  return histogram;
+}
+
+int* getHistogramOldFast(const Mat& img) {
+  const int height = img.rows;
+  const int width = img.cols;
+
+  int* histogram = new int[256]();
+
+  const uchar* lpSrc = img.data;
+  const int w = (int)img.step;  // no dword alignment is done !!!
+  for (int i = 0; i < height; i++)
+    for (int j = 0; j < width; j++) {
+      const uchar val = lpSrc[i * w + j];
+      histogram[val]++;
+    }
+  return histogram;
+}
+
+// Using std::array instead of raw pointer, this way we don't have to worry
+// about memory management
+std::array<int, 256> getHistogram(const Mat& img) {
+  const int height = img.rows;
+  const int width = img.cols;
+
+  std::array<int, 256> histogram{};
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      const int val = img.at<uchar>(i, j);
+      histogram[val]++;
+    }
+  }
+  return histogram;
+}
+
+std::array<int, 256> getHistogramFast(const Mat& img) {
+  const int height = img.rows;
+  const int width = img.cols;
+
+  std::array<int, 256> histogram{};
+  const uchar* lpSrc = img.data;
+  const int w = (int)img.step;  // no dword alignment is done !!!
+  for (int i = 0; i < height; i++)
+    for (int j = 0; j < width; j++) {
+      const int val = lpSrc[i * w + j];
+      histogram[val]++;
+    }
+  return histogram;
+}
+
+float* getPDFOld(const int* histogram, int M) {
+  float* pdf = new float[256]();
+  for (int i = 0; i < 256; i++) {
+    pdf[i] = (float)histogram[i] / M;
+  }
+  return pdf;
+}
+
+std::array<float, 256> getPDF(const std::array<int, 256>& histogram, int M) {
+  std::array<float, 256> pdf{};
+  for (int i = 0; i < 256; i++) {
+    pdf[i] = (float)histogram[i] / M;
+  }
+  return pdf;
+}
+
+void showHistogram(const string& name, int* hist, const int hist_cols,
+                   const int hist_height) {
+  Mat imgHist(hist_height, hist_cols, CV_8UC3, CV_RGB(255, 255, 255));
+  // constructs a white image
+
+  // computes histogram maximum
+  int max_hist = 0;
+  for (int i = 0; i < hist_cols; i++)
+    if (hist[i] > max_hist) max_hist = hist[i];
+
+  double scale = 1.0;
+  scale = (double)hist_height / max_hist;
+  int baseline = hist_height - 1;
+  for (int x = 0; x < hist_cols; x++) {
+    Point p1 = Point(x, baseline);
+    Point p2 = Point(x, baseline - cvRound(hist[x] * scale));
+    line(imgHist, p1, p2, CV_RGB(255, 0, 255));  // histogram bins
+    // colored in magenta
+  }
+  imshow(name, imgHist);
+}
+
+void showHistogram(const string& name, const std::array<int, 256>& hist,
+                   const int hist_cols, const int hist_height) {
+  Mat imgHist(hist_height, hist_cols, CV_8UC3, CV_RGB(255, 255, 255));
+  // constructs a white image
+
+  // computes histogram maximum
+  int max_hist = *std::max_element(hist.begin(), hist.end());
+
+  double scale = 1.0;
+  scale = (double)hist_height / max_hist;
+  int baseline = hist_height - 1;
+  for (int x = 0; x < hist_cols; x++) {
+    Point p1 = Point(x, baseline);
+    Point p2 = Point(x, baseline - cvRound(hist[x] * scale));
+    line(imgHist, p1, p2, CV_RGB(255, 0, 255));  // histogram bins
+    // colored in magenta
+  }
+  imshow(name, imgHist);
+}
+
+void testCalcHist() {
+  const std::string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    const Mat src = imread(abs_image_path, IMREAD_GRAYSCALE);
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    int* histogramOld = getHistogramOld(src);
+    auto t2 = std::chrono::high_resolution_clock::now();
+    // Compute the time difference [ms]
+    cout << "(OLD) It took "
+         << std::chrono::duration<double, std::milli>(t2 - t1) << endl;
+
+    t1 = std::chrono::high_resolution_clock::now();
+    int* histogramOldFast = getHistogramOldFast(src);
+    t2 = std::chrono::high_resolution_clock::now();
+    // Compute the time difference [ms]
+    cout << "(OLD FAST) It took "
+         << std::chrono::duration<double, std::milli>(t2 - t1) << endl;
+
+    t1 = std::chrono::high_resolution_clock::now();
+    std::array<int, 256> histogramNew = getHistogram(src);
+    t2 = std::chrono::high_resolution_clock::now();
+    // Compute the time difference [ms]
+    cout << "(NEW) It took "
+         << std::chrono::duration<double, std::milli>(t2 - t1) << endl;
+
+    t1 = std::chrono::high_resolution_clock::now();
+    std::array<int, 256> histogramNewFast = getHistogramFast(src);
+    t2 = std::chrono::high_resolution_clock::now();
+    // Compute the time difference [ms]
+    cout << "(NEW FAST) It took "
+         << std::chrono::duration<double, std::milli>(t2 - t1) << endl;
+
+    showHistogram("Histogram Old", histogramOld, 256, 200);
+    showHistogram("Histogram Old Fast", histogramOldFast, 256, 200);
+    showHistogram("Histogram New", histogramNew, 256, 200);
+    showHistogram("Histogram New Fast", histogramNewFast, 256, 200);
+
+    delete[] histogramOld;
+    delete[] histogramOldFast;
+
+    ImageUtil::waitKey();
+  }
+}
+
+std::vector<int> getHistogramWithBins(const cv::Mat& img, int m) {
+  const int height = img.rows;
+  const int width = img.cols;
+
+  std::vector<int> histogram(m, 0);
+
+  const uchar* lpSrc = img.data;
+  const int w = (int)img.step;
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      const int val = lpSrc[i * w + j];
+      const int bin = (val * m) / 256;
+      histogram[bin]++;
+    }
+  }
+
+  return histogram;
+}
+
+std::vector<int> getLocalHistogramMaxima(const std::array<float, 256>& pdf,
+                                         const int windowHalfWidth = 5,
+                                         const float threshold = 0.0003f) {
+  std::vector<int> maxima;
+
+  for (int k = windowHalfWidth; k < 256 - windowHalfWidth; k++) {
+    float sum = 0.0f;
+    bool isMaximum = true;
+
+    for (int offset = -windowHalfWidth; offset <= windowHalfWidth; offset++) {
+      const float value = pdf[k + offset];
+      sum += value;
+      if (pdf[k] < value) {
+        isMaximum = false;
+      }
+    }
+
+    const float average = sum / static_cast<float>(2 * windowHalfWidth + 1);
+    if (isMaximum && pdf[k] > average + threshold) {
+      maxima.push_back(k);
+    }
+  }
+
+  maxima.insert(maxima.begin(), 0);
+  maxima.push_back(255);
+  maxima.erase(std::unique(maxima.begin(), maxima.end()), maxima.end());
+
+  return maxima;
+}
+
+std::array<uchar, 256> buildNearestMaximumLookup(
+    const std::vector<int>& maxima) {
+  std::array<uchar, 256> lookup{};
+
+  for (int grayLevel = 0; grayLevel < 256; grayLevel++) {
+    int nearestMaximum = maxima.front();
+    int minDistance = std::abs(grayLevel - nearestMaximum);
+
+    for (size_t index = 1; index < maxima.size(); index++) {
+      const int currentMaximum = maxima[index];
+      const int currentDistance = std::abs(grayLevel - currentMaximum);
+      if (currentDistance < minDistance) {
+        minDistance = currentDistance;
+        nearestMaximum = currentMaximum;
+      }
+    }
+
+    lookup[grayLevel] = static_cast<uchar>(nearestMaximum);
+  }
+
+  return lookup;
+}
+
+Mat getMultiThresholdedFromGray(const Mat& src,
+                                const std::vector<int>& maxima) {
+  Mat dst(src.rows, src.cols, CV_8UC1);
+  const std::array<uchar, 256> lookup = buildNearestMaximumLookup(maxima);
+
+  for (int i = 0; i < src.rows; i++) {
+    const uchar* srcRow = src.ptr(i);
+    uchar* dstRow = dst.ptr(i);
+    for (int j = 0; j < src.cols; j++) {
+      dstRow[j] = lookup[srcRow[j]];
+    }
+  }
+
+  return dst;
+}
+
+void testMultiLevelThresholding() {
+  const std::string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    constexpr int windowHalfWidth = 5;
+    constexpr float threshold = 0.0003f;
+
+    const Mat src = imread(abs_image_path, IMREAD_GRAYSCALE);
+    const std::array<int, 256> histogram = getHistogramFast(src);
+    const std::array<float, 256> pdf = getPDF(histogram, src.rows * src.cols);
+    const std::vector<int> maxima =
+        getLocalHistogramMaxima(pdf, windowHalfWidth, threshold);
+    const Mat dst = getMultiThresholdedFromGray(src, maxima);
+    const std::array<int, 256> dstHistogram = getHistogramFast(dst);
+
+    cout << "Detected maxima: ";
+    for (const int maximum : maxima) {
+      cout << maximum << ' ';
+    }
+    cout << endl;
+
+    imshow("Grayscale", src);
+    imshow("Multi-Level Thresholding", dst);
+    showHistogram("Histogram", histogram, 256, 200);
+    showHistogram("Multi-Level Thresholding Histogram", dstHistogram, 256, 200);
+
+    ImageUtil::waitKey();
+  }
+}
+
+void diffuseError(Mat& img, const int row, const int col,
+                  const float errorFactor) {
+  if (isInside(img, row, col)) {
+    img.at<float>(row, col) =
+        std::clamp(img.at<float>(row, col) + errorFactor, 0.0f, 255.0f);
+  }
+}
+
+Mat getFloydSteinbergDitheredFromGray(const Mat& src,
+                                      const std::vector<int>& maxima) {
+  Mat dst(src.rows, src.cols, CV_8UC1);
+  Mat work;
+  src.convertTo(work, CV_32FC1);
+
+  const std::array<uchar, 256> lookup = buildNearestMaximumLookup(maxima);
+
+  for (int i = 0; i < work.rows; i++) {
+    for (int j = 0; j < work.cols; j++) {
+      const float oldPixel = work.at<float>(i, j);
+      const int oldPixelIndex = std::clamp(cvRound(oldPixel), 0, 255);
+      const uchar newPixel = lookup[oldPixelIndex];
+      const float error = oldPixel - static_cast<float>(newPixel);
+
+      work.at<float>(i, j) = static_cast<float>(newPixel);
+      dst.at<uchar>(i, j) = newPixel;
+
+      diffuseError(work, i, j + 1, 7.0f * error / 16.0f);
+      diffuseError(work, i + 1, j - 1, 3.0f * error / 16.0f);
+      diffuseError(work, i + 1, j, 5.0f * error / 16.0f);
+      diffuseError(work, i + 1, j + 1, 1.0f * error / 16.0f);
+    }
+  }
+
+  return dst;
+}
+
+void testFloydSteinbergDithering() {
+  const std::string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    constexpr int windowHalfWidth = 5;
+    constexpr float threshold = 0.0003f;
+
+    const Mat src = imread(abs_image_path, IMREAD_GRAYSCALE);
+    const std::array<int, 256> histogram = getHistogramFast(src);
+    const std::array<float, 256> pdf = getPDF(histogram, src.rows * src.cols);
+    const std::vector<int> maxima =
+        getLocalHistogramMaxima(pdf, windowHalfWidth, threshold);
+    const Mat multiLevel = getMultiThresholdedFromGray(src, maxima);
+    const Mat floydStein = getFloydSteinbergDitheredFromGray(src, maxima);
+
+    imshow("Grayscale", src);
+    imshow("Multi-Level Thresholding", multiLevel);
+    imshow("Floyd-Steinberg Dithering", floydStein);
+
+    ImageUtil::waitKey();
+  }
+}
+
+// End of Lab 3
+
 int main() {
   int op;
   do {
@@ -759,9 +1197,13 @@ int main() {
     printf(" 21 - Display R, G, B separately\n");
     printf(" 22 - Display R, G, B separately Fast\n");
     printf(" 23 - RGB -> Grayscale\n");
+    printf(" 27 - RGB -> Grayscale (fast)\n");
     printf(" 24 - Grayscale -> Binary with threshold from stdin\n");
     printf(" 25 - RGB -> HSV\n");
     printf(" 26 - isInside\n");
+    printf(" 31 - Show Histogram\n");
+    printf(" 32 - Multi-Level Thresholding\n");
+    printf(" 33 - Floyd-Steinberg Dithering\n");
     printf("  0 - Exit\n\n");
     printf("Option: ");
     cin >> op;
@@ -829,6 +1271,9 @@ int main() {
       case 23:
         testRGB2Gray();
         break;
+      case 27:
+        testRGB2GrayFast();
+        break;
       case 24:
         testGray2Binary();
         break;
@@ -837,6 +1282,15 @@ int main() {
         break;
       case 26:
         testIsInside();
+        break;
+      case 31:
+        testCalcHist();
+        break;
+      case 32:
+        testMultiLevelThresholding();
+        break;
+      case 33:
+        testFloydSteinbergDithering();
         break;
     }
   } while (op != 0);
