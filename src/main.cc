@@ -1167,6 +1167,109 @@ void testFloydSteinbergDithering() {
 
 // End of Lab 3
 
+/**
+ * LAB 4
+ */
+
+int getAreaSlow(const Mat& img, const Vec3b& color) {
+  int area = 0;
+  for (int i = 0; i < img.rows; i++) {
+    for (int j = 0; j < img.cols; j++) {
+      if (img.at<Vec3b>(i, j) == color) {
+        area++;
+      }
+    }
+  }
+  return area;
+}
+
+int getAreaFast(const Mat& img, const Vec3b& color) {
+  int area = 0;
+  for (int i = 0; i < img.rows; i++) {
+    const Vec3b* row_ptr = img.ptr<Vec3b>(i);
+    for (int j = 0; j < img.cols; j++) {
+      if (row_ptr[j] == color) {
+        area++;
+      }
+    }
+  }
+  return area;
+}
+
+Point2f getCenterOfMass(const Mat& img, const Vec3b& color, const int area) {
+  Point2f centerOfMass(0, 0);
+  for (int i = 0; i < img.rows; i++) {
+    const Vec3b* row_ptr = img.ptr<Vec3b>(i);
+    for (int j = 0; j < img.cols; j++) {
+      if (row_ptr[j] == color) {
+        centerOfMass.x += j;
+        centerOfMass.y += i;
+      }
+    }
+  }
+  centerOfMass.x /= area;
+  centerOfMass.y /= area;
+  return centerOfMass;
+}
+
+void myCallBackFuncGeom(int event, int x, int y, int flags, void* param) {
+  // More examples:
+  // http://opencvexamples.blogspot.com/2014/01/detect-mouse-clicks-and-moves-on-image.html
+  // Mat& src = *((Mat*)param);
+  Mat& src = *static_cast<Mat*>(param);
+  if (event == EVENT_LBUTTONDOWN) {
+    // C style casting
+    // Doesn't check at compile time
+    // (int)(*src).at<Vec3b>(y, x)[2],
+    // (int)(*src).at<Vec3b>(y, x)[1],
+    // (int)(*src).at<Vec3b>(y, x)[0]);
+
+    Vec3b pixel = src.at<Vec3b>(y, x);
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    int area = getAreaSlow(src, pixel);
+    auto t2 = std::chrono::high_resolution_clock::now();
+    // Compute the time difference [ms]
+    cout << "(SLOW) It took "
+         << std::chrono::duration<double, std::milli>(t2 - t1) << " ms" << endl;
+
+    t1 = std::chrono::high_resolution_clock::now();
+    area = getAreaFast(src, pixel);
+    t2 = std::chrono::high_resolution_clock::now();
+    // Compute the time difference [ms]
+    cout << "(FAST) It took "
+         << std::chrono::duration<double, std::milli>(t2 - t1) << " ms" << endl;
+
+    Point2f centerOfMass = getCenterOfMass(src, pixel, area);
+
+    // Using C++ static_cast, this checks at compile time
+    cout << "" << endl;
+    cout << "      Pos(x,y): " << x << "," << y << endl;
+    cout << "    Color(RGB): " << static_cast<int>(pixel[2]) << ","
+         << static_cast<int>(pixel[1]) << "," << static_cast<int>(pixel[0])
+         << endl;
+    cout << "          Area: " << area << " pixels" << endl;
+    cout << std::fixed << std::setprecision(2) << "Center of Mass: ("
+         << centerOfMass.x << "," << centerOfMass.y << ")" << endl;
+    cout << "" << endl;
+  }
+}
+
+void testGeometricCalcs() {
+  const std::string abs_image_path = FileUtil::getSingleFileAbsPath();
+  if (!abs_image_path.empty()) {
+    // Important to make sure Mat is NOT const!
+    Mat src = imread(abs_image_path, IMREAD_COLOR);
+
+    std::string windowName = "Source";
+
+    imshow(windowName, src);
+    setMouseCallback(windowName, myCallBackFuncGeom, &src);
+
+    ImageUtil::waitKey();
+  }
+}
+
 int main() {
   int op;
   do {
@@ -1204,6 +1307,7 @@ int main() {
     printf(" 31 - Show Histogram\n");
     printf(" 32 - Multi-Level Thresholding\n");
     printf(" 33 - Floyd-Steinberg Dithering\n");
+    printf(" 41 - Test Geometric Calcs\n");
     printf("  0 - Exit\n\n");
     printf("Option: ");
     cin >> op;
@@ -1291,6 +1395,9 @@ int main() {
         break;
       case 33:
         testFloydSteinbergDithering();
+        break;
+      case 41:
+        testGeometricCalcs();
         break;
     }
   } while (op != 0);
